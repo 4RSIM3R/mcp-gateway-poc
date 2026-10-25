@@ -1,0 +1,24 @@
+# Frankfurter: foreign exchange rates from the European Central Bank and other
+# central banks. Free, no key.
+spec: openapi.json
+source: https://api.frankfurter.dev/v1/openapi.json   # snapshot taken 2026-10-25
+upstream:
+  base_url: https://api.frankfurter.dev/v1
+  timeout: 3s
+# No operation in this spec has an operationId, so each one is picked by
+# method and path and given a name here.
+expose:
+  - method: GET
+    path: /latest
+    name: getLatestRates
+  - method: GET
+    path: /currencies
+    name: listCurrencies
+  - method: GET
+    path: /{date}
+    name: getRatesOnDate
+  - method: GET
+    path: /{start_date}..{end_date}
+    name: getRatesForPeriod
+# GET /{start_date}.. (a period up to today) is left out: getRatesForPeriod
+# covers it, and fewer near-duplicate tools make the model's choice easier.

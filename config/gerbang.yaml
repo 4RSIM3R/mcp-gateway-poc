@@ -1,0 +1,51 @@
+# gerbang gateway config. In production this whole folder is baked into the
+# gateway image; for the local PoC the gateway reads it from disk.
+listen: 127.0.0.1:8080
+
+# Each subfolder of services_dir is one downstream service, and the folder
+# name is the service name. It holds the service's own OpenAPI spec (never
+# edited) and a service.yaml saying how gerbang exposes it.
+services_dir: services
+
+# Upstream settings every service gets unless its service.yaml overrides them.
+defaults:
+  timeout: 5s
+  max_concurrency: 50          # in-flight calls per service, per gateway pod
+  retries: 1                   # GET only
+  max_response_bytes: 262144   # 256 KiB; longer responses are cut off with a note
+  headers:
+    User-Agent: gerbang-poc/0.1
+
+# PoC auth: static API keys, for local use only. These get replaced by JWT
+# (issuer + JWKS) later; a JWT maps to the same actor and roles, so policies
+# do not change.
+principals:
+  - name: ops-bot
+    key: dev-key-ops-bot
+    actor: agent
+    roles: [reader]
+  - name: alice
+    key: dev-key-alice
+    actor: human
+    roles: [reader, store-manager]
+
+# Tool IDs are "<service>.<tool>". <tool> is the operationId, or the name set
+# in service.yaml, with characters MCP does not allow turned into "_".
+# "*" matches any characters within an ID.
+#
+# A tool is callable only if at least one policy allows it, and tools/list
+# shows each caller only the tools it may call. A policy applies when the
+# caller has any of its roles and, if actor is set, that actor type.
+policies:
+  - name: read-everything
+    when: { roles: [reader] }
+    allow: [petstore.find*, petstore.get*, fx.*, weather.*, github.*]
+  - name: store-writes
+    when: { roles: [store-manager], actor: human }
+    allow: [petstore.addPet, petstore.updatePet, petstore.placeOrder, petstore.delete*]
+
+# Curated tool sets across services, served at /bundle/<name>/mcp. Policies
+# still apply inside a bundle: ops-bot gets "pet-shop" without the write tools.
+bundles:
+  trip-planner: [weather.*, fx.*]
+  pet-shop: [petstore.*, fx.getLatestRates]

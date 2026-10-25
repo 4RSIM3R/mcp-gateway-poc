@@ -1,0 +1,212 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.4.0
+  description: Order management for the storefront.
+servers:
+  - url: http://127.0.0.1:9001
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders
+      description: Returns orders, newest first, optionally filtered by status or customer.
+      parameters:
+        - name: status
+          in: query
+          description: Only return orders with this status.
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: customer_id
+          in: query
+          description: Only return orders placed by this customer (a user ID such as usr_1).
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of orders to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Matching orders.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orders, count]
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  count:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      operationId: createOrder
+      summary: Create an order
+      description: Places a new order in the pending state.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: The created order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      operationId: getOrder
+      summary: Get an order
+      description: Returns one order with its line items and current status.
+      responses:
+        '200':
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /orders/{orderId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      operationId: cancelOrder
+      summary: Cancel an order
+      description: Cancels a pending or paid order.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
+      responses:
+        '200':
+          description: The cancelled order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      description: The order ID, such as ord_1001.
+      schema:
+        type: string
+  schemas:
+    OrderStatus:
+      type: string
+      enum: [pending, paid, shipped, delivered, cancelled]
+    LineItem:
+      type: object
+      required: [sku, name, quantity, unit_price_cents]
+      properties:
+        sku:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price_cents:
+          type: integer
+          format: int64
+    Order:
+      type: object
+      required: [id, customer_id, status, items, total_cents, currency, created_at]
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        total_cents:
+          type: integer
+          format: int64
+        currency:
+          type: string
+          example: USD
+        created_at:
+          type: string
+          format: date-time
+        cancel_reason:
+          type: string
+          nullable: true
+    CreateOrderRequest:
+      type: object
+      required: [customer_id, items]
+      properties:
+        customer_id:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, quantity]
+            properties:
+              sku:
+                type: string
+              quantity:
+                type: integer
+                minimum: 1
+    CancelOrderRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          description: Why the order is being cancelled.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+  responses:
+    BadRequest:
+      description: The request was invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: No order with that ID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The order is in a state that does not allow this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

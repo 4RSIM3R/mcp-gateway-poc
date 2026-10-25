@@ -1,0 +1,25 @@
+# Swagger Petstore v3: a public sandbox shared with the whole internet. Anyone
+# can read what you write, and the data gets reset. Use fake data only.
+spec: openapi.yml
+source: https://petstore3.swagger.io/api/v3/openapi.yaml   # snapshot taken 2026-10-25
+upstream:
+  # The spec's servers[] is relative (/api/v3), so the base URL lives here.
+  base_url: https://petstore3.swagger.io/api/v3
+# The spec declares petstore_auth and api_key security, which the sandbox does
+# not enforce. Credentials for upstream calls always come from service.yaml,
+# never from the spec.
+expose:
+  - operation: findPetsByStatus
+  - operation: findPetsByTags
+  - operation: getPetById
+  - operation: getInventory
+  - operation: getOrderById
+  - operation: addPet
+  - operation: updatePet
+  - operation: deletePet
+    hide_params: [api_key]   # an optional key header the sandbox ignores
+  - operation: placeOrder
+  - operation: deleteOrder
+# Not exposed: uploadFile (binary body; v1 supports JSON bodies only), the
+# user/* operations (login and account management), and updatePetWithForm
+# (updatePet covers it).

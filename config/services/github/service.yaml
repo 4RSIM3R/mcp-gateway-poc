@@ -1,0 +1,34 @@
+# GitHub REST API: 1,242 operations in a 10 MB spec. The spec fails
+# validation (two paths conflict), so it tests that the gateway validates only
+# what it exposes.
+spec: openapi.yml
+source: https://raw.githubusercontent.com/github/rest-api-description/bb754941722779d8a5b3a2f25a5fbb7ce794e1ea/descriptions/api.github.com/api.github.com.yaml
+upstream:
+  base_url: https://api.github.com
+  timeout: 10s
+  headers:
+    Accept: application/vnd.github+json
+    X-GitHub-Api-Version: "2022-11-28"
+  # If GITHUB_TOKEN is unset, calls go out unauthenticated, which GitHub
+  # limits to 60 requests per hour per IP.
+  token_env: GITHUB_TOKEN
+  # Per gateway pod. Keeps the PoC under the unauthenticated limit; raise it
+  # when a token is set.
+  rate_limit: { requests: 50, per: 1h }
+  max_response_bytes: 524288   # 512 KiB; list endpoints return large objects
+# GitHub operationIds contain "/" (repos/get), which MCP tool names do not
+# allow. gerbang turns it into "_", so repos/get becomes github.repos_get.
+expose:
+  - operation: repos/get
+  - operation: repos/list-for-org
+  - operation: repos/list-for-user
+  - operation: repos/list-commits
+  - operation: repos/list-releases
+  - operation: repos/get-latest-release
+  - operation: issues/list-for-repo
+  - operation: issues/get
+  - operation: pulls/list
+  - operation: pulls/get
+  - operation: search/repos
+  - operation: search/issues-and-pull-requests
+  - operation: users/get-by-username

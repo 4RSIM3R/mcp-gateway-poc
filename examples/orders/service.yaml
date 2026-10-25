@@ -1,0 +1,15 @@
+spec: openapi.yml
+upstream:
+  base_url: http://127.0.0.1:9001   # overrides servers[] in the spec
+  timeout: 3s
+  max_concurrency: 50               # in-flight calls to this service, per gateway pod
+  retries: 1                        # GET only
+# Only listed operations become tools. createOrder is in the spec but is
+# deliberately not exposed.
+expose:
+  - operation: getOrder
+  - operation: listOrders
+  - operation: cancelOrder
+    description: >-
+      Cancel an order. Only works while the order is pending or paid;
+      shipped or delivered orders cannot be cancelled.

@@ -1,0 +1,19 @@
+# Open-Meteo weather forecast API. Free for non-commercial use, no key.
+spec: openapi.yml
+source: https://raw.githubusercontent.com/open-meteo/open-meteo/930063f12047363861f775c685c16a98b52dbfe4/openapi/forecast.yml
+upstream:
+  # The spec lists servers only on the path item, next to the paid
+  # customer-api host. Pin the free host here.
+  base_url: https://api.open-meteo.com
+expose:
+  - method: GET
+    path: /v1/forecast
+    name: getForecast
+    # The spec's own description is marketing text, which does not help a
+    # model decide when or how to call the tool.
+    description: >-
+      Weather forecast and current conditions for a location. latitude and
+      longitude are required. Ask for variables through current (now), hourly
+      or daily, as comma-separated names such as temperature_2m,weather_code.
+      Set timezone (for example Asia/Jakarta) to get local times.
+    hide_params: [apikey]   # only for paid customers

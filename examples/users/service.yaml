@@ -1,0 +1,12 @@
+spec: openapi.yml
+upstream:
+  base_url: http://127.0.0.1:9002
+  timeout: 2s
+  max_concurrency: 50
+  retries: 1
+expose:
+  - operation: getUser
+  - operation: searchUsers
+  - method: GET   # no operationId in the spec
+    path: /users/{userId}/addresses
+    name: listUserAddresses
