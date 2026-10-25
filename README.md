@@ -34,6 +34,26 @@ flowchart LR
     config["config/<br/>gerbang.yaml + OpenAPI specs"] -. "boot: compile 28 tools" .-> gerbang
 ```
 
+From the client's side:
+
+```mermaid
+sequenceDiagram
+    participant C as Client (Claude Code)
+    participant G as gerbang
+    participant API as Petstore
+    C->>G: POST /svc/petstore/mcp with Bearer key
+    Note over C,G: no key or a wrong key gets 401
+    C->>G: tools/list
+    G-->>C: only the tools this key may call
+    C->>G: tools/call getPetById, petId 1
+    G->>G: check policy, validate arguments
+    G->>API: GET /pet/1
+    API-->>G: 200 JSON
+    G-->>C: result
+    C->>G: tools/call deletePet
+    G-->>C: isError: permission denied
+```
+
 Endpoints: `/svc/<name>/mcp` (one API), `/bundle/<name>/mcp` (a curated set), and `/omni/mcp` (discovery):
 
 ```mermaid
